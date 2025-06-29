@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Based on the ERD in the project documentation
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  fullName     String
+  role         Role      @relation(fields: [roleId], references: [id])
+  roleId       String
+  isActive     Boolean   @default(true)
+  phoneNumber  String?   @db.VarChar(255) // PII Data
+  schedules    Schedule[]
+  shifts       Shift[]
+  availabilities Availability[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Role {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  permissions Json?
+  users       User[]
+}
+
+model Schedule {
+  id                  String    @id @default(uuid())
+  name                String
+  startDate           DateTime
+  endDate             DateTime
+  status              String    @default("DRAFT") // DRAFT, PUBLISHED, ARCHIVED
+  constraintsSnapshot Json?
+  author              User      @relation(fields: [createdById], references: [id])
+  createdById         String
+  shifts              Shift[]
+  createdAt           DateTime  @default(now())
+}
+
+model Shift {
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  schedule    Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  scheduleId  String
+  startTime   DateTime
+  endTime     DateTime
+  shiftType   ShiftType @relation(fields: [shiftTypeId], references: [id])
+  shiftTypeId String
+  isOverride  Boolean   @default(false)
+
+  @@index([userId, scheduleId])
+}
+
+model ShiftType {
+  id                  String  @id @default(uuid())
+  name                String  @unique
+  staffingRequirements Json?
+  shifts              Shift[]
+}
+
+model Availability {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+}
+
+model GlobalConstraint {
+  id        String  @id @default(uuid())
+  key       String  @unique
+  value     Int
+  isEnabled Boolean @default(true)
+}
