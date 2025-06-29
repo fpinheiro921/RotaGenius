@@ -31,3 +31,6 @@ yarn-error.log*
 # AppleDouble files
 ._*
 *~
+
+# Ignore boilerplate reference folder
+/boilerplate
