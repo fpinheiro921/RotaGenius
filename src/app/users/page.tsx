@@ -1,6 +1,4 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { prisma } from '@/lib/prisma';
 
 interface User {
   id: string;
@@ -12,37 +10,17 @@ interface User {
   };
 }
 
-export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function getUsers(): Promise<User[]> {
+  const users = await prisma.user.findMany({
+    include: {
+      role: true,
+    },
+  });
+  return users;
+}
 
-  useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const response = await fetch('/api/users');
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
-        }
-        const data = await response.json();
-        setUsers(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUsers();
-  }, []);
-
-  if (loading) {
-    return <div className="p-4">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
-  }
+export default async function UsersPage() {
+  const users = await getUsers();
 
   return (
     <div className="p-8">
@@ -55,6 +33,9 @@ export default function UsersPage() {
             <p className="text-sm text-gray-500">Role: {user.role.name}</p>
           </li>
         ))}
+        {users.length === 0 && (
+            <p>No users found. Please seed the database.</p>
+        )}
       </ul>
     </div>
   );
